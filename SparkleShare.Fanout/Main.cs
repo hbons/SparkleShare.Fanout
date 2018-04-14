@@ -65,6 +65,12 @@ namespace SparkleShare.Fanout {
                 response_socket.Bind ("tcp://" + Address + ":" + ResponsePort);
                 publisher_socket.Bind ("tcp://" + Address + ":" + PublisherPort);
 
+                string announce_word = "announce";
+                string announce_prefix = string.Format("{0} ", announce_word);
+
+                int message_part_max_length = 64; // SHA256 length
+                char message_part_sep = ':';
+
                 while (true) {
                     string message = response_socket.ReceiveString ();
 
@@ -76,12 +82,15 @@ namespace SparkleShare.Fanout {
 
                         Console.WriteLine ("[response_socket] Sent: {0}", timestamp);
 
-                    } else if (message.StartsWith ("announce ")) {
+                    } else if (message.StartsWith (announce_prefix)) {
                         string topic = "", content = "";
 
                         try {
-                            string body     = message.Substring (9);
-                            string [] parts = body.Split ("!".ToCharArray ());
+                            string body = message.Substring (announce_prefix.Length);
+                            string [] parts = body.Split (message_part_sep);
+
+                            if (parts [0].Length > message_part_max_length || parts [1].Length > message_part_max_length)
+                                throw new Exception ();
 
                             topic   = parts [0];
                             content = parts [1];
@@ -90,6 +99,7 @@ namespace SparkleShare.Fanout {
 
                         } catch (Exception) {
                             Console.WriteLine ("[response_socket] Invalid request: {0}", message);
+                            response_socket.Send ("400");
                         }
 
                         if (!string.IsNullOrEmpty (topic) && !string.IsNullOrEmpty (content)) {
@@ -99,10 +109,10 @@ namespace SparkleShare.Fanout {
                             publisher_socket.SendMore (topic).Send (content);
                             Console.WriteLine ("[publisher_socket] Sent: topic: {0}, content: {1}", topic, content);
                         }
-                    
+
                     } else {
-                        Console.WriteLine ("[response_socket] Invalid request: {0}", message);
-                        response_socket.Send ("Huh?");
+                        Console.WriteLine ("[response_socket] Invalid syntax: {0}", message);
+                        response_socket.Send ("400");
                     }
                 }
             }      
