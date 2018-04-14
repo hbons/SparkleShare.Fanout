@@ -23,6 +23,7 @@ using System;
 using System.Threading.Tasks;
 
 using NetMQ;
+using NetMQ.Sockets;
 
 namespace SparkleShare.Fanout {
 
@@ -133,8 +134,8 @@ namespace SparkleShare.Fanout {
             {
                 subscriber_socket.Connect ("tcp://" + Address + ":" + PublisherPort);
 
-                subscriber_socket.Subscribe ("kittens");
-                subscriber_socket.Subscribe ("puppies");
+                (subscriber_socket as SubscriberSocket).Subscribe ("kittens");
+                (subscriber_socket as SubscriberSocket).Subscribe ("puppies");
 
                 while (true) {
                     string topic   = subscriber_socket.ReceiveString ();
