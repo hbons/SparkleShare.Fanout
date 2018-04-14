@@ -89,15 +89,18 @@ namespace SparkleShare.Fanout {
                             string body = message.Substring (announce_prefix.Length);
                             string [] parts = body.Split (message_part_sep);
 
-                            if (parts [0].Length > message_part_max_length || parts [1].Length > message_part_max_length)
-                                throw new Exception ();
+                            if (string.IsNullOrWhiteSpace(parts[0]) || string.IsNullOrWhiteSpace(parts[0]) ||
+                                parts[0].Length > message_part_max_length || parts[1].Length > message_part_max_length) {
+
+                                throw new FormatException();
+                            }
 
                             topic   = parts [0];
                             content = parts [1];
 
                             Console.WriteLine("[response_socket] Received: topic: {0}, content: {1}", topic, content);
 
-                        } catch (Exception) {
+                        } catch (FormatException) {
                             Console.WriteLine ("[response_socket] Invalid request: {0}", message);
                             response_socket.Send ("400");
                         }
